@@ -23,14 +23,12 @@
     <TreatSpecificWarningsAsErrors />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System.Management" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update=".\TouchpadService.Designer.cs">
       <DependentUpon>TouchpadService.cs</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Management.Infrastructure" Version="4.0.0" />
   </ItemGroup>
 </Project>

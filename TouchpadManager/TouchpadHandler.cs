@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Management;
 using System.Threading;
-using Microsoft.Management.Infrastructure;
 
 namespace TouchpadManager
 {
@@ -14,7 +14,7 @@ namespace TouchpadManager
         private volatile bool _stopRequested;
         private bool _disabled;
         private bool _otherPointingDeviceAvailable;
-        private CimInstance _touchpad;
+        private ManagementBaseObject _touchpad;
         private readonly HashSet<string> _touchpadDeviceNames = new HashSet<string>{ "Asus Support Device" };
 
         /// <summary>
@@ -53,22 +53,20 @@ namespace TouchpadManager
         // Check if touchpad should be disable or not, and synchronize its state.
         private void Synchronize()
         {
-            using (var session = CimSession.Create(null))
+            using (var searcher = new ManagementObjectSearcher(@"select * from Win32_PointingDevice"))
+            using (var pointingDevices = searcher.Get())
             {
-                var result = session.QueryInstances("root/cimv2", "WQL", "select * from Win32_PointingDevice");
-
-                _otherPointingDeviceAvailable = false;
-                foreach (var device in result)
+                foreach (var device in pointingDevices)
                 {
                     // https://msdn.microsoft.com/en-us/library/aa394356(VS.85).aspx
-                    switch (device.CimInstanceProperties["PointingType"]?.Value as int?)
+                    switch (device.Properties["PointingType"].Value as int?)
                     {
                         // Other
                         case 1:
                         // Unknwonw
                         case 2:
                         case null:
-                            if (_touchpadDeviceNames.Contains(device.CimInstanceProperties["Name"]?.Value as string))
+                            if (_touchpadDeviceNames.Contains(device.Properties["Name"].Value as string))
                             {
                                 SetTouchpad(device);
                                 continue;
@@ -91,7 +89,7 @@ namespace TouchpadManager
             //_touchpad.CimInstanceProperties
         }
 
-        private void SetTouchpad(CimInstance device)
+        private void SetTouchpad(ManagementBaseObject device)
         {
             if (_touchpad != null)
                 throw new InvalidOperationException("A touchpad is already found, cannot handle multiple touchpad.");
