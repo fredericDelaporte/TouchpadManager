@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <VersionMajor Condition="'$(VersionMajor)' == ''">1</VersionMajor>
+    <VersionMinor Condition="'$(VersionMinor)' == ''">0</VersionMinor>
+    <VersionPatch Condition="'$(VersionPatch)' == ''">0</VersionPatch>
+    <VersionSuffix Condition="'$(VersionSuffix)' == ''">
+    </VersionSuffix>
+    <VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionPatch)</VersionPrefix>
+    <AssemblyVersion>$(VersionMajor).$(VersionMinor).0.0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
+    <Product>Touchpad Manager</Product>
+    <Company>Frédéric Delaporte</Company>
+    <Copyright>Licensed under LGPL.</Copyright>
+    <Authors>Frédéric Delaporte</Authors>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Description>A service for auto-disabling touchpad.</Description>
+    <TargetFramework>net471</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <TreatSpecificWarningsAsErrors />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update=".\TouchpadService.Designer.cs">
+      <DependentUpon>TouchpadService.cs</DependentUpon>
+    </Compile>
+    <Compile Update=".\ProjectInstaller.Designer.cs">
+      <DependentUpon>ProjectInstaller.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.8" />
+  </ItemGroup>
+</Project>
