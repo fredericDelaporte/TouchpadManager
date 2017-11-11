@@ -101,7 +101,17 @@ namespace TouchpadManager
             var query =
                 $"SELECT * FROM {(otherPointingDeviceAvailable ? "__InstanceDeletionEvent" : "__InstanceCreationEvent")} WITHIN 2 WHERE TargetInstance ISA \"Win32_PointingDevice\"";
             _watcher = new ManagementEventWatcher(query);
-            _watcher.EventArrived += (sender, args) => Synchronize();
+            _watcher.EventArrived += (sender, args) =>
+            {
+                try
+                {
+                    Synchronize();
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Failed synchronizing on mouse plug/unplug event", e);
+                }
+            };
             _watcher.Start();
         }
 
