@@ -11,7 +11,8 @@ namespace TouchpadManager
     public class TouchpadHandler
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(TouchpadHandler));
-        private static readonly Guid MouseClassGuid = new Guid("{4d36e96f-e325-11ce-bfc1-08002be10318}");
+        private static readonly string MouseClassGuidString = "{4d36e96f-e325-11ce-bfc1-08002be10318}";
+        private static readonly Guid MouseClassGuid = new Guid(MouseClassGuidString);
         private readonly HashSet<string> _touchpadDeviceNames = new HashSet<string> { "Asus Support Device" };
         private ManagementEventWatcher _watcher;
         private string _touchpadId;
@@ -42,8 +43,10 @@ namespace TouchpadManager
         {
             CleanUp();
 
+            Log.Info("Synchronizing state");
+            
             var otherPointingDeviceAvailable = false;
-            // WMI does seems to allow querying disable devices as pointing device.
+            // WMI does not seem to allow querying disable devices as pointing device.
             using (var searcher = new ManagementObjectSearcher(@"select * from Win32_PointingDevice"))
             using (var pointingDevices = searcher.Get())
             {
@@ -81,6 +84,7 @@ namespace TouchpadManager
 
             if (_touchpadId == null)
             {
+                Log.Info("No enabled touchpad found.");
                 SearchDisabledTouchpad();
                 if (_touchpadId == null)
                 {
@@ -90,9 +94,15 @@ namespace TouchpadManager
             }
 
             Log.InfoFormat("Found touchpad {0}; other pointing device: {1}.", _touchpadId, otherPointingDeviceAvailable);
+            Log.Info("Adjusting touchpad state.");
             DeviceHelper.SetDeviceEnabled(MouseClassGuid, _touchpadId, !otherPointingDeviceAvailable);
 
-            _watcher = new ManagementEventWatcher("");
+            Log.Info("Listening for mouse devices changes.");
+            var query =
+                $"SELECT * FROM {(otherPointingDeviceAvailable ? "__InstanceDeletionEvent" : "__InstanceCreationEvent")} WITHIN 2 WHERE TargetInstance ISA \"Win32_PointingDevice\"";
+            _watcher = new ManagementEventWatcher(query);
+            _watcher.EventArrived += (sender, args) => Synchronize();
+            _watcher.Start();
         }
 
         private void SetTouchpad(ManagementBaseObject device)
@@ -111,7 +121,21 @@ namespace TouchpadManager
 
         private void SearchDisabledTouchpad()
         {
-            
+            using (var searcher = new ManagementObjectSearcher(
+                // ConfigManagerErrorCode = 22 => disabled
+                $@"select * from Win32_PnPEntity where ClassGuid = ""{MouseClassGuidString}"" and ConfigManagerErrorCode = 22"))
+            using (var devices = searcher.Get())
+            {
+                foreach (var device in devices)
+                {
+                    if (devices.Count == 1)
+                    {
+                        Log.Info("Found one disabled pointing device, assuming it is the touchpad");
+                        SetTouchpad(device);
+                    }
+                    device.Dispose();
+                }
+            }
         }
 
         private void CleanUp()
